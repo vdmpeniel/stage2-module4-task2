@@ -12,21 +12,24 @@ public class ConnectionPool {
     private static final String URL = "url";
     private static final String LOGIN = "login";
     private static final String PASSWORD = "password";
-    private static ConnectionPool instance;
-    private Queue<ProxyConnection> freeConnections;
-    private Queue<ProxyConnection> usedConnections;
+    private volatile static ConnectionPool instance;
+    private final Queue<ProxyConnection> freeConnections;
+    private final Queue<ProxyConnection> usedConnections;
 
     private ConnectionPool() {
         freeConnections = new ArrayDeque<>(POOL_SIZE);
         usedConnections = new ArrayDeque<>();
         IntStream.range(0, POOL_SIZE)
-                .mapToObj(i -> new ProxyConnection(this, new RealConnection(URL, LOGIN, PASSWORD)))
+                .mapToObj(i -> new RealConnection(URL, LOGIN, PASSWORD))
+                .map(ProxyConnection::new)
                 .forEach(freeConnections::offer);
     }
 
     public static ConnectionPool getInstance() {
-        if (instance == null) {
-            instance = new ConnectionPool();
+        synchronized (ConnectionPool.class) {
+            if (instance == null) {
+                instance = new ConnectionPool();
+            }
         }
         return instance;
     }

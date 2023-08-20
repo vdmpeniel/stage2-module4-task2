@@ -20,8 +20,7 @@ public class ConnectionPool {
         freeConnections = new ArrayDeque<>(POOL_SIZE);
         usedConnections = new ArrayDeque<>();
         IntStream.range(0, POOL_SIZE)
-                .mapToObj(i -> new RealConnection(URL, LOGIN, PASSWORD))
-                .map(ProxyConnection::new)
+                .mapToObj(i -> new ProxyConnection(this, new RealConnection(URL, LOGIN, PASSWORD)))
                 .forEach(freeConnections::offer);
     }
 
@@ -57,5 +56,21 @@ public class ConnectionPool {
 
     public int getUsedConnectionsCount() {
         return usedConnections.size();
+    }
+
+
+
+    /* Testing */
+    public static void main(String[] args) {
+        ConnectionPool pool = ConnectionPool.getInstance();
+        System.out.format("Free connections: %s\n", pool.getFreeConnectionsCount());
+
+        pool.getConnection();
+        pool.getConnection().close();
+        pool.releaseConnection(pool.getConnection());
+        pool.destroyPool();
+
+        System.out.format("Free connections: %s\n", pool.getFreeConnectionsCount());
+        System.out.format("Used connections: %s\n", pool.getUsedConnectionsCount());
     }
 }
